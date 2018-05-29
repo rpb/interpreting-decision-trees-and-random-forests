@@ -38,7 +38,6 @@ def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
     obs_contrib_df - A Pandas DataFrame that includes the feature values
                      and their contributions
     """
-    print("WTF")
     def _extract_contrib_array():
         # If regression tree
         if len(contributions.shape) == 2:
@@ -112,7 +111,6 @@ def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
             t.set_bbox(dict(facecolor='white', alpha=0.5, edgecolor=blue))
 
     def _edit_axes():
-        print("Hello")
         if has_ax:
             ax.set_xlabel('Contribution of feature')
         else:
@@ -124,7 +122,6 @@ def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
         or isinstance(clf, GradientBoostingClassifier):
             scores = clf.predict_proba(features_df.iloc[index:index+1])[0]
             scores = [float('{:1.3f}'.format(i)) for i in scores]
-            print(scores)
             if has_ax:
                 ax.set_title('True Value: {}\nScores: {}'
                                  .format(true_label, scores[class_index]))
@@ -175,7 +172,6 @@ def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
         obs_contrib_tail = obs_contrib_df.tail(num_features).copy()
     else:
         obs_contrib_tail = obs_contrib_df.copy()
-    print("Plot_contrib")
     _plot_contrib()
     return _edit_axes()
 
