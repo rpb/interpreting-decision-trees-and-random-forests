@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.ensemble.gradient_boosting import GradientBoostingClassifier
+from sklearn.ensemble.gradient_boosting import BaseGradientBoosting
 import seaborn as sns
 from statsmodels.nonparametric.smoothers_lowess import lowess
 from treeinterpreter import treeinterpreter as ti
@@ -130,6 +132,19 @@ def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
                               .format(true_label, scores[class_index]))
 
             # Returns obs_contrib_df (flipped back), true labels, and scores 
+            return obs_contrib_df.iloc[::1], true_label, scores
+        elif isinstance(clf, GradientBoostingClassifier):
+            scores = clf.predict_proba(features_df.iloc[index:index+1])[0]
+            scores = [float('{:1.3f}'.format(i)) for i in scores]
+            print(scores)
+            if has_ax:
+                ax.set_title('True Value: {}\nScores: {}'
+                                 .format(true_label, scores[class_index]))
+            else:
+                plt.title('True Value: {}\nScores: {}'
+                              .format(true_label, scores[class_index]))
+
+            # Returns obs_contrib_df (flipped back), true labels, and scores
             return obs_contrib_df.iloc[::1], true_label, scores
 
         elif isinstance(clf, DecisionTreeRegressor)\
