@@ -6,8 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.ensemble.gradient_boosting import GradientBoostingClassifier
-from sklearn.ensemble.gradient_boosting import BaseGradientBoosting
+from sklearn.ensemble.gradient_boosting import GradientBoostingClassifier, GradientBoostingRegressor
 import seaborn as sns
 from statsmodels.nonparametric.smoothers_lowess import lowess
 from treeinterpreter import treeinterpreter as ti
@@ -15,7 +14,7 @@ from treeinterpreter import treeinterpreter as ti
 sns.set_palette('colorblind')
 blue, green, red, purple, yellow, cyan = sns.color_palette('colorblind')
 
-def plot_obs_feature_contrib(clf, contributions, features_df, labels, index, 
+def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
                              class_index=0, num_features=None,
                              order_by='natural', violin=False, **kwargs):
     """Plots a single observation's feature contributions.
@@ -39,7 +38,7 @@ def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
     obs_contrib_df - A Pandas DataFrame that includes the feature values
                      and their contributions
     """
-
+    print("WTF")
     def _extract_contrib_array():
         # If regression tree
         if len(contributions.shape) == 2:
@@ -113,6 +112,7 @@ def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
             t.set_bbox(dict(facecolor='white', alpha=0.5, edgecolor=blue))
 
     def _edit_axes():
+        print("Hello")
         if has_ax:
             ax.set_xlabel('Contribution of feature')
         else:
@@ -120,20 +120,8 @@ def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
 
         true_label = labels.iloc[index]
         if isinstance(clf, DecisionTreeClassifier)\
-                or isinstance(clf, RandomForestClassifier):
-            scores = clf.predict_proba(features_df.iloc[index:index+1])[0]
-            scores = [float('{:1.3f}'.format(i)) for i in scores]
-
-            if has_ax:
-                ax.set_title('True Value: {}\nScores: {}'
-                                 .format(true_label, scores[class_index]))
-            else:
-                plt.title('True Value: {}\nScores: {}'
-                              .format(true_label, scores[class_index]))
-
-            # Returns obs_contrib_df (flipped back), true labels, and scores 
-            return obs_contrib_df.iloc[::1], true_label, scores
-        elif isinstance(clf, GradientBoostingClassifier):
+        or isinstance(clf, RandomForestClassifier)\
+        or isinstance(clf, GradientBoostingClassifier):
             scores = clf.predict_proba(features_df.iloc[index:index+1])[0]
             scores = [float('{:1.3f}'.format(i)) for i in scores]
             print(scores)
@@ -148,7 +136,8 @@ def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
             return obs_contrib_df.iloc[::1], true_label, scores
 
         elif isinstance(clf, DecisionTreeRegressor)\
-                or isinstance(clf, RandomForestRegressor):
+                or isinstance(clf, RandomForestRegressor)\
+                or isinstance(clf, GradientBoostingRegressor):
             pred = clf.predict(features_df.iloc[index:index+1])[0]
 
             if has_ax:
@@ -158,7 +147,7 @@ def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
                 plt.title('True Value: {}\nPredicted Value: {:1.3f}'
                               .format(true_label, pred))
 
-            # Returns obs_contrib_df (flipped back), true labels, and scores 
+            # Returns obs_contrib_df (flipped back), true labels, and scores
             return obs_contrib_df.iloc[::-1], true_label, pred
 
     if 'ax' in kwargs:
@@ -186,7 +175,7 @@ def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
         obs_contrib_tail = obs_contrib_df.tail(num_features).copy()
     else:
         obs_contrib_tail = obs_contrib_df.copy()
-
+    print("Plot_contrib")
     _plot_contrib()
     return _edit_axes()
 
