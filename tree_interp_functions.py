@@ -6,17 +6,19 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.ensemble.gradient_boosting import GradientBoostingClassifier, GradientBoostingRegressor
+from sklearn.ensemble.gradient_boosting import GradientBoostingClassifier
+from sklearn.ensemble.gradient_boosting import BaseGradientBoosting
 import seaborn as sns
 from statsmodels.nonparametric.smoothers_lowess import lowess
 from treeinterpreter import treeinterpreter as ti
-
+from scipy.special import expit
 sns.set_palette('colorblind')
 blue, green, red, purple, yellow, cyan = sns.color_palette('colorblind')
 
 def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
                              class_index=0, num_features=None,
-                             order_by='natural', violin=False, **kwargs):
+                             order_by='natural', violin=False, prob=False,
+                             neg=False, **kwargs):
     """Plots a single observation's feature contributions.
 
     Inputs:
@@ -38,6 +40,10 @@ def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
     obs_contrib_df - A Pandas DataFrame that includes the feature values
                      and their contributions
     """
+    def _softmax(x):
+        e_x = np.exp(x - np.max(x))
+        return e_x / e_x.sum()
+
     def _extract_contrib_array():
         # If regression tree
         if len(contributions.shape) == 2:
@@ -95,7 +101,15 @@ def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
                            obs_contrib_tail.index
                           )
         else:
-            obs_contrib_tail['contrib'].plot(kind='barh', ax=ax)
+
+            if prob:
+                obs_contrib_tail['pcontrib'] = _softmax(1.0 - expit(obs_contrib_tail['contrib'].values))
+                obs_contrib_tail['pcontrib'].plot(kind='barh', ax=ax)
+            elif neg:
+                obs_contrib_tail['ncontrib'] = -1.0 * obs_contrib_tail['contrib'].values
+                obs_contrib_tail['ncontrib'].plot(kind='barh', ax=ax)
+            else:
+                obs_contrib_tail['contrib'].plot(kind='barh', ax=ax)
 
         if has_ax:
             ax.axvline(0, c='black', linestyle='--', linewidth=2)
@@ -118,10 +132,23 @@ def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
 
         true_label = labels.iloc[index]
         if isinstance(clf, DecisionTreeClassifier)\
-        or isinstance(clf, RandomForestClassifier)\
-        or isinstance(clf, GradientBoostingClassifier):
+                or isinstance(clf, RandomForestClassifier):
             scores = clf.predict_proba(features_df.iloc[index:index+1])[0]
             scores = [float('{:1.3f}'.format(i)) for i in scores]
+
+            if has_ax:
+                ax.set_title('True Value: {}\nScores: {}'
+                                 .format(true_label, scores[class_index]))
+            else:
+                plt.title('True Value: {}\nScores: {}'
+                              .format(true_label, scores[class_index]))
+
+            # Returns obs_contrib_df (flipped back), true labels, and scores
+            return obs_contrib_df.iloc[::1], true_label, scores
+        elif isinstance(clf, GradientBoostingClassifier):
+            scores = clf.predict_proba(features_df.iloc[index:index+1])[0]
+            scores = [float('{:1.3f}'.format(i)) for i in scores]
+            print(scores)
             if has_ax:
                 ax.set_title('True Value: {}\nScores: {}'
                                  .format(true_label, scores[class_index]))
@@ -133,8 +160,7 @@ def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
             return obs_contrib_df.iloc[::1], true_label, scores
 
         elif isinstance(clf, DecisionTreeRegressor)\
-                or isinstance(clf, RandomForestRegressor)\
-                or isinstance(clf, GradientBoostingRegressor):
+                or isinstance(clf, RandomForestRegressor):
             pred = clf.predict(features_df.iloc[index:index+1])[0]
 
             if has_ax:
@@ -172,6 +198,7 @@ def plot_obs_feature_contrib(clf, contributions, features_df, labels, index,
         obs_contrib_tail = obs_contrib_df.tail(num_features).copy()
     else:
         obs_contrib_tail = obs_contrib_df.copy()
+
     _plot_contrib()
     return _edit_axes()
 
